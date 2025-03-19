@@ -1,18 +1,18 @@
 {
-  "name": "nodejs-argo",
-  "version": "8.8.8",
-  "description": "Thsi is a node project",
+  "name": "node-ws",
+  "version": "1.0.0",
+  "description": "Node.js Server",
   "main": "index.js",
-  "author": "eooce",
-  "repository": "https://github.com/eooce/nodejs-argo",
+  "author": "eoovve",
+  "repository": "https://github.com/eoovve/node-ws",
   "license": "MIT",
   "private": false,
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "axios": "latest",
-    "express": "^4.18.2"
+    "ws": "^8.14.2",
+    "axios": "^1.6.2"
   },
   "engines": {
     "node": ">=14"
