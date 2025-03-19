@@ -1,4 +1,4 @@
-﻿import os
+import os
 import re
 import shutil
 import subprocess
@@ -18,15 +18,15 @@ FILE_PATH = os.environ.get('FILE_PATH', './tmp')
 PROJECT_URL = os.environ.get('URL', '') # 填写项目分配的url可实现自动访问，例如：https://www.google.com，留空即不启用该功能
 INTERVAL_SECONDS = int(os.environ.get("TIME", 120))                         # 访问间隔时间，默认120s，单位：秒
 UUID = os.environ.get('UUID', 'faacf142-dee8-48c2-8558-641123eb939c')       # UUID
-NEZHA_SERVER = os.environ.get('NEZHA_SERVER', 'nezha.mingfei1981.eu.org')                  # 哪吒3个变量不全不运行
+NEZHA_SERVER = os.environ.get('NEZHA_SERVER', 'nezha.mingfei1981.eu.org')   # 哪吒3个变量不全不运行
 NEZHA_PORT = os.environ.get('NEZHA_PORT', '443')                           # 哪吒端口为{443,8443,2096,2097,2083}其中之一时自动开启tls
-NEZHA_KEY = os.environ.get('NEZHA_KEY', 'l5GINS8lct8Egroitn')                                 # 哪吒客户端密钥
-ARGO_DOMAIN = os.environ.get('ARGO_DOMAIN', 'appwrite.ncaa.nyc.mn')                             # 国定隧道域名，留空即启用临时隧道
-ARGO_AUTH = os.environ.get('ARGO_AUTH', 'eyJhIjoiOTk3ZjY4OGUzZjBmNjBhZGUwMWUxNGRmZTliOTdkMzEiLCJ0IjoiZDQzMTc4YTEtZGRmYy00YTkwLWI0YzAtNzNkODUwYzY3NDdmIiwicyI6IlptWm1NMlppT0RZdE1tRTFOeTAwTlRVd0xUbGhaV0V0WmpsaFl6VTFOV0k0TVRCbSJ9')                                 # 国定隧道json或token，留空即启用临时隧道,json获取地址：https://fscarmen.cloudflare.now.cc
-ARGO_PORT = int(os.environ.get('ARGO_PORT', 8001))                          # Argo端口，固定隧道token请改回8080或在cf后台设置的端口与这里对应
-CFIP = os.environ.get('CFIP', 'www.visa.com.tw')                            # 优选域名或优选ip
-CFPORT = int(os.environ.get('CFPORT', 443))                                 # 优选域名或优选ip对应端口
-NAME = os.environ.get('NAME', 'Vls')                                        # 节点名称
+NEZHA_KEY = os.environ.get('NEZHA_KEY', 'l5GINS8lct8Egroitn')             # 哪吒客户端密钥
+ARGO_DOMAIN = os.environ.get('ARGO_DOMAIN', 'appwrite.ncaa.nyc.mn')        # 国定隧道域名，留空即启用临时隧道
+ARGO_AUTH = os.environ.get('ARGO_AUTH', 'eyJhIjoiOTk3ZjY4OGUzZjBmNjBhZGUwMWUxNGRmZTliOTdkMzEiLCJ0IjoiZDQzMTc4YTEtZGRmYy00YTkwLWI0YzAtNzNkODUwYzY3NDdmIiwicyI6IlptWm1NMlppT0RZdE1tRTFOeTAwTlRVd0xUbGhaV0V0WmpsaFl6VTFOV0k0TVRCbSJ9') # 国定隧道json或token，留空即启用临时隧道,json获取地址：https://fscarmen.cloudflare.now.cc
+ARGO_PORT = int(os.environ.get('ARGO_PORT', 8001))                         # Argo端口，固定隧道token请改回8080或在cf后台设置的端口与这里对应
+CFIP = os.environ.get('CFIP', 'www.visa.com.tw')                           # 优选域名或优选ip
+CFPORT = int(os.environ.get('CFPORT', 443))                                # 优选域名或优选ip对应端口
+NAME = os.environ.get('NAME', 'Vls')                                       # 节点名称
 PORT = int(os.environ.get('SERVER_PORT') or os.environ.get('PORT') or 3000) # 订阅端口，如无法订阅，请手动修改为分配的端口
 
 # Create directory if it doesn't exist
@@ -37,7 +37,7 @@ else:
     print(f"{FILE_PATH} already exists")
 
 # Clean old files
-paths_to_delete = ['boot.log', 'list.txt','sub.txt', 'npm', 'web', 'bot', 'tunnel.yml', 'tunnel.json']
+paths_to_delete = ['boot.log', 'list.txt', 'sub.txt', 'npm', 'web', 'bot', 'tunnel.yml', 'tunnel.json']
 for file in paths_to_delete:
     file_path = os.path.join(FILE_PATH, file)
     try:
@@ -48,7 +48,6 @@ for file in paths_to_delete:
 
 # http server
 class MyHandler(http.server.SimpleHTTPRequestHandler):
-
     def log_message(self, format, *args):
         pass
 
@@ -81,7 +80,18 @@ server_thread.start()
 
 # Generate xr-ay config file
 def generate_config():
-    config ={"log":{"access":"/dev/null","error":"/dev/null","loglevel":"none",},"inbounds":[{"port":ARGO_PORT ,"protocol":"vless","settings":{"clients":[{"id":UUID ,"flow":"xtls-rprx-vision",},],"decryption":"none","fallbacks":[{"dest":3001 },{"path":"/vless-argo","dest":3002 },{"path":"/vmess-argo","dest":3003 },{"path":"/trojan-argo","dest":3004 },],},"streamSettings":{"network":"tcp",},},{"port":3001 ,"listen":"127.0.0.1","protocol":"vless","settings":{"clients":[{"id":UUID },],"decryption":"none"},"streamSettings":{"network":"ws","security":"none"}},{"port":3002 ,"listen":"127.0.0.1","protocol":"vless","settings":{"clients":[{"id":UUID ,"level":0 }],"decryption":"none"},"streamSettings":{"network":"ws","security":"none","wsSettings":{"path":"/vless-argo"}},"sniffing":{"enabled":True ,"destOverride":["http","tls","quic"],"metadataOnly":False }},{"port":3003 ,"listen":"127.0.0.1","protocol":"vmess","settings":{"clients":[{"id":UUID ,"alterId":0 }]},"streamSettings":{"network":"ws","wsSettings":{"path":"/vmess-argo"}},"sniffing":{"enabled":True ,"destOverride":["http","tls","quic"],"metadataOnly":False }},{"port":3004 ,"listen":"127.0.0.1","protocol":"trojan","settings":{"clients":[{"password":UUID },]},"streamSettings":{"network":"ws","security":"none","wsSettings":{"path":"/trojan-argo"}},"sniffing":{"enabled":True ,"destOverride":["http","tls","quic"],"metadataOnly":False }},],"dns":{"servers":["https+local://8.8.8.8/dns-query"]},"outbounds":[{"protocol":"freedom","tag": "direct" },{"protocol":"blackhole","tag":"block"}]}
+    config = {
+        "log": {"access": "/dev/null", "error": "/dev/null", "loglevel": "none"},
+        "inbounds": [
+            {"port": ARGO_PORT, "protocol": "vless", "settings": {"clients": [{"id": UUID, "flow": "xtls-rprx-vision"}], "decryption": "none", "fallbacks": [{"dest": 3001}, {"path": "/vless-argo", "dest": 3002}, {"path": "/vmess-argo", "dest": 3003}, {"path": "/trojan-argo", "dest": 3004}]}, "streamSettings": {"network": "tcp"}},
+            {"port": 3001, "listen": "127.0.0.1", "protocol": "vless", "settings": {"clients": [{"id": UUID}], "decryption": "none"}, "streamSettings": {"network": "ws", "security": "none"}},
+            {"port": 3002, "listen": "127.0.0.1", "protocol": "vless", "settings": {"clients": [{"id": UUID, "level": 0}], "decryption": "none"}, "streamSettings": {"network": "ws", "security": "none", "wsSettings": {"path": "/vless-argo"}}, "sniffing": {"enabled": True, "destOverride": ["http", "tls", "quic"], "metadataOnly": False}},
+            {"port": 3003, "listen": "127.0.0.1", "protocol": "vmess", "settings": {"clients": [{"id": UUID, "alterId": 0}]}, "streamSettings": {"network": "ws", "wsSettings": {"path": "/vmess-argo"}}, "sniffing": {"enabled": True, "destOverride": ["http", "tls", "quic"], "metadataOnly": False}},
+            {"port": 3004, "listen": "127.0.0.1", "protocol": "trojan", "settings": {"clients": [{"password": UUID}]}, "streamSettings": {"network": "ws", "security": "none", "wsSettings": {"path": "/trojan-argo"}}, "sniffing": {"enabled": True, "destOverride": ["http", "tls", "quic"], "metadataOnly": False}}
+        ],
+        "dns": {"servers": ["https+local://8.8.8.8/dns-query"]},
+        "outbounds": [{"protocol": "freedom", "tag": "direct"}, {"protocol": "blackhole", "tag": "block"}]
+    }
     with open(os.path.join(FILE_PATH, 'config.json'), 'w', encoding='utf-8') as config_file:
         json.dump(config, config_file, ensure_ascii=False, indent=2)
 
@@ -126,7 +136,7 @@ def download_files_and_run():
     valid_ports = ['443', '8443', '2096', '2087', '2083', '2053']
     if NEZHA_SERVER and NEZHA_PORT and NEZHA_KEY:
         if NEZHA_PORT in valid_ports:
-          NEZHA_TLS = '--tls'
+            NEZHA_TLS = '--tls'
         command = f"nohup {FILE_PATH}/npm -s {NEZHA_SERVER}:{NEZHA_PORT} -p {NEZHA_KEY} {NEZHA_TLS} >/dev/null 2>&1 &"
         try:
             subprocess.run(command, shell=True, check=True)
@@ -148,9 +158,8 @@ def download_files_and_run():
 
     # Run cloud-fared
     if os.path.exists(os.path.join(FILE_PATH, 'bot')):
-		# Get command line arguments for cloud-fared
+        # Get command line arguments for cloud-fared
         args = get_cloud_flare_args()
-        # print(args)
         try:
             subprocess.run(f"nohup {FILE_PATH}/bot {args} >/dev/null 2>&1 &", shell=True, check=True)
             print('bot is running')
@@ -159,10 +168,8 @@ def download_files_and_run():
             print(f'Error executing command: {e}')
 
     subprocess.run('sleep 3', shell=True)  # Wait for 3 seconds
-	
-   
+
 def get_cloud_flare_args():
-    
     processed_auth = ARGO_AUTH
     try:
         auth_data = json.loads(ARGO_AUTH)
@@ -171,7 +178,6 @@ def get_cloud_flare_args():
     except json.JSONDecodeError:
         pass
 
-    # Determines the condition and generates the corresponding args
     if not processed_auth and not ARGO_DOMAIN:
         args = f'tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile {FILE_PATH}/boot.log --loglevel info --url http://localhost:{ARGO_PORT}'
     elif processed_auth == 'TunnelSecret':
@@ -179,9 +185,7 @@ def get_cloud_flare_args():
     elif processed_auth and ARGO_DOMAIN and 120 <= len(processed_auth) <= 250:
         args = f'tunnel --edge-ip-version auto --no-autoupdate --protocol http2 run --token {processed_auth}'
     else:
-        # Default args for other cases
         args = f'tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile {FILE_PATH}/boot.log --loglevel info --url http://localhost:{ARGO_PORT}'
-
     return args
 
 # Return file information based on system architecture
@@ -203,7 +207,6 @@ def get_files_for_architecture(architecture):
 # Authorize files
 def authorize_files(file_paths):
     new_permissions = 0o775
-
     for relative_file_path in file_paths:
         absolute_file_path = os.path.join(FILE_PATH, relative_file_path)
         try:
@@ -211,7 +214,6 @@ def authorize_files(file_paths):
             print(f"Empowerment success for {absolute_file_path}: {oct(new_permissions)}")
         except Exception as e:
             print(f"Empowerment failed for {absolute_file_path}: {e}")
-
 
 # Get fixed tunnel JSON and yml
 def argo_config():
@@ -244,7 +246,6 @@ argo_config()
 # Get temporary tunnel domain
 def extract_domains():
     argo_domain = ''
-
     if ARGO_AUTH and ARGO_DOMAIN:
         argo_domain = ARGO_DOMAIN
         print('ARGO_DOMAIN:', argo_domain)
@@ -253,7 +254,6 @@ def extract_domains():
         try:
             with open(os.path.join(FILE_PATH, 'boot.log'), 'r', encoding='utf-8') as file:
                 content = file.read()
-                # Use regular expressions to match domain ending in trycloudflare.com
                 match = re.search(r'https://([^ ]+\.trycloudflare\.com)', content)
                 if match:
                     argo_domain = match.group(1)
@@ -261,18 +261,15 @@ def extract_domains():
                     generate_links(argo_domain)
                 else:
                     print('ArgoDomain not found, re-running bot to obtain ArgoDomain')
-                    # 结束现有bot进程
                     try:
                         subprocess.run("pkill -f 'bot tunnel'", shell=True)
                         print('Stopped existing bot process')
                     except Exception as e:
                         print(f'Error stopping bot process: {e}')
                     
-                    time.sleep(2)  # 等待2秒
-                    # 删除boot.log文件
+                    time.sleep(2)
                     os.remove(os.path.join(FILE_PATH, 'boot.log'))
                     
-                    # 最多重试10次
                     max_retries = 10
                     for attempt in range(max_retries):
                         print(f'Attempt {attempt + 1} of {max_retries}')
@@ -281,7 +278,6 @@ def extract_domains():
                             subprocess.run(f"nohup {FILE_PATH}/bot {args} >/dev/null 2>&1 &", shell=True, check=True)
                             print('bot is running')
                             time.sleep(3)
-                            # 尝试获取域名，使用相同的正则表达式
                             with open(os.path.join(FILE_PATH, 'boot.log'), 'r', encoding='utf-8') as file:
                                 content = file.read()
                                 match = re.search(r'https://([^ ]+\.trycloudflare\.com)', content)
@@ -298,27 +294,36 @@ def extract_domains():
                             print(f"Error executing command: {e}")
                         except Exception as e:
                             print(f"Error: {e}")
-                    else:  
+                    else:
                         print("Failed to obtain ArgoDomain after maximum retries")
         except IndexError as e:
             print(f"IndexError while reading boot.log: {e}")
         except Exception as e:
             print(f"Error reading boot.log: {e}")
 
-
 # Generate list and sub info
 def generate_links(argo_domain):
-    meta_info = subprocess.run(['curl', '-s', 'https://speed.cloudflare.com/meta'], capture_output=True, text=True)
-    meta_info = meta_info.stdout.split('"')
-    ISP = f"{meta_info[25]}-{meta_info[17]}".replace(' ', '_').strip()
+    # 使用 requests.get 替代 curl
+    try:
+        response = requests.get('https://speed.cloudflare.com/meta')
+        response.raise_for_status()  # 检查请求是否成功
+        meta_info = response.text.split('"')
+        ISP = f"{meta_info[25]}-{meta_info[17]}".replace(' ', '_').strip()
+    except requests.RequestException as e:
+        print(f"Error fetching meta info: {e}")
+        ISP = "Unknown-ISP"  # 如果请求失败，提供默认值
 
     time.sleep(2)
-    VMESS = {"v": "2", "ps": f"{NAME}-{ISP}", "add": CFIP, "port": CFPORT, "id": UUID, "aid": "0", "scy": "none", "net": "ws", "type": "none", "host": argo_domain, "path": "/vmess-argo?ed=2048", "tls": "tls", "sni": argo_domain, "alpn": ""}
+    VMESS = {
+        "v": "2", "ps": f"{NAME}-{ISP}", "add": CFIP, "port": CFPORT, "id": UUID,
+        "aid": "0", "scy": "none", "net": "ws", "type": "none", "host": argo_domain,
+        "path": "/vmess-argo?ed=2048", "tls": "tls", "sni": argo_domain, "alpn": ""
+    }
  
     list_txt = f"""
 vless://{UUID}@{CFIP}:{CFPORT}?encryption=none&security=tls&sni={argo_domain}&type=ws&host={argo_domain}&path=%2Fvless-argo%3Fed%3D2048#{NAME}-{ISP}
   
-vmess://{ base64.b64encode(json.dumps(VMESS).encode('utf-8')).decode('utf-8')}
+vmess://{base64.b64encode(json.dumps(VMESS).encode('utf-8')).decode('utf-8')}
 
 trojan://{UUID}@{CFIP}:{CFPORT}?security=tls&sni={argo_domain}&type=ws&host={argo_domain}&path=%2Ftrojan-argo%3Fed%3D2048#{NAME}-{ISP}
     """
@@ -347,7 +352,6 @@ trojan://{UUID}@{CFIP}:{CFPORT}?security=tls&sni={argo_domain}&type=ws&host={arg
         if os.path.exists(file_path_to_delete):
             try:
                 os.remove(file_path_to_delete)
-                # print(f"{file_path_to_delete} has been deleted")
             except Exception as e:
                 print(f"Error deleting {file_path_to_delete}: {e}")
         else:
@@ -356,7 +360,7 @@ trojan://{UUID}@{CFIP}:{CFPORT}?security=tls&sni={argo_domain}&type=ws&host={arg
     print('\033c', end='')
     print('App is running')
     print('Thank you for using this script, enjoy!')
-         
+
 # Run the callback
 def start_server():
     download_files_and_run()
@@ -377,9 +381,7 @@ def visit_project_page():
             return
 
         response = requests.get(PROJECT_URL)
-        response.raise_for_status() 
-
-        # print(f"Visiting project page: {PROJECT_URL}")
+        response.raise_for_status()
         print("Page visited successfully")
         print('\033c', end='')
     except requests.exceptions.RequestException as error:
