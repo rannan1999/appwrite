@@ -3,13 +3,14 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"  // 添加 http 包
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"io"  // 添加 io 包
 )
 
-// 环境变量配置
 type Config struct {
 	FilePath    string
 	NezhaServer string
