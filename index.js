@@ -1,13 +1,12 @@
 const http = require('http');
-const https = require('https'); // Added for native HTTP requests
+const https = require('https');
 const fs = require('fs').promises;
-const { exec, spawn } = require('child_process');
+const { spawn } = require('child_process');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
 const FILE_PATH = process.env.FILE_PATH || path.resolve('./.npm');
 
-// 设置环境变量
 const env = {
     UUID: process.env.UUID || 'faacf142-dee8-48c2-8558-641123eb939c',
     NEZHA_SERVER: process.env.NEZHA_SERVER || 'nezha.mingfei1981.eu.org',
@@ -37,7 +36,8 @@ async function initialize() {
         await downloadAndRun();
         await generateLinks();
     } catch (error) {
-        console.error('Initialization failed:', error);
+        console.error('初始化失败:', error);
+        throw error; // 抛出错误以便部署平台记录
     }
 }
 
@@ -90,7 +90,7 @@ async function downloadAndRun() {
         'x64': { bot: 'https://github.com/eooce/test/releases/download/amd64/bot13', web: 'https://github.com/eooce/test/releases/download/amd64/seen', npm: 'https://github.com/eooce/test/releases/download/bulid/swith' }
     };
 
-    if (!files[arch]) throw new Error(`Unsupported architecture: ${arch}`);
+    if (!files[arch]) throw new Error(`不支持的架构: ${arch}`);
 
     const fileMap = {};
     for (const [name, url] of Object.entries(files[arch])) {
@@ -124,12 +124,20 @@ async function downloadAndRun() {
 
 async function downloadFile(url, dest) {
     return new Promise((resolve, reject) => {
-        exec(`curl -L -sS -o ${dest} ${url} || wget -q -O ${dest} ${url}`, (error) => {
-            if (error) {
-                reject(new Error(`Download failed: Neither curl nor wget is available. URL: ${url}`));
-            } else {
-                resolve();
+        const file = fs.createWriteStream(dest);
+        https.get(url, (response) => {
+            if (response.statusCode !== 200) {
+                reject(new Error(`下载失败: HTTP ${response.statusCode} - ${url}`));
+                return;
             }
+            response.pipe(file);
+            file.on('finish', () => {
+                file.close();
+                resolve();
+            });
+        }).on('error', (err) => {
+            fs.unlink(dest).catch(() => {}); // 删除未完成的文件
+            reject(new Error(`下载失败: ${err.message} - ${url}`));
         });
     });
 }
@@ -146,12 +154,12 @@ async function generateLinks() {
                     const parsed = JSON.parse(data);
                     resolve(`${parsed.city}-${parsed.country}`.replace(' ', '_'));
                 } catch (error) {
-                    console.error('Failed to parse ISP metadata:', error);
+                    console.error('解析ISP元数据失败:', error);
                     resolve('unknown');
                 }
             });
         }).on('error', (err) => {
-            console.error('Failed to fetch ISP metadata:', err.message);
+            console.error('获取ISP元数据失败:', err.message);
             resolve('unknown');
         });
     });
@@ -187,11 +195,17 @@ const server = http.createServer(async (req, res) => {
             res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
             res.end(data);
         } catch (error) {
-            console.error(error);
+            console.error('读取list.txt失败:', error);
             res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Error reading list.txt' }));
+            res.end(JSON.stringify({ error: '读取list.txt出错' }));
         }
     }
 });
 
-server.listen(PORT, initialize);
+server.listen(PORT, () => {
+    console.log(`服务器运行在端口 ${PORT}`);
+    initialize().catch(err => {
+        console.error('启动时发生错误:', err);
+        process.exit(1); // 退出进程以便部署平台捕获错误
+    });
+});
