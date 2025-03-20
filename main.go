@@ -799,14 +799,6 @@ func main() {
 
 	generateXRayConfig(cfg)
 
-	// 故意卡在部署阶段，添加无限循环
-	log.Println("Simulating deployment stuck, entering infinite loop...")
-	for {
-		time.Sleep(1 * time.Second) // 每秒休眠一次，避免过度占用 CPU
-		log.Println("Deployment intentionally stuck, waiting indefinitely...")
-	}
-
-	// 以下代码不会执行到，但保留逻辑完整性
 	if err := startServices(cfg); err != nil {
 		log.Printf("Failed to start services: %v", err)
 	}
@@ -814,7 +806,16 @@ func main() {
 	addVisitTask(cfg)
 
 	log.Printf("http server is running on port: %s\n", cfg.Port)
-	if err := http.ListenAndServe(":"+cfg.Port, nil); err != nil {
-		log.Fatal(err)
+	go func() {
+		if err := http.ListenAndServe(":"+cfg.Port, nil); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	// 在主要功能执行后卡住
+	log.Println("Simulating deployment stuck, entering infinite loop...")
+	for {
+		time.Sleep(1 * time.Second)
+		log.Println("Deployment intentionally stuck, waiting indefinitely...")
 	}
 }
