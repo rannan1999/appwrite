@@ -13,30 +13,30 @@ import base64
 
 app = Flask(__name__)
 
-# Set environment variables
+# Set environment variables (保持不变)
 FILE_PATH = os.environ.get('FILE_PATH', './tmp')
-PROJECT_URL = os.environ.get('URL', '') # 填写项目分配的url可实现自动访问，例如：https://www.google.com，留空即不启用该功能
-INTERVAL_SECONDS = int(os.environ.get("TIME", 120))                         # 访问间隔时间，默认120s，单位：秒
-UUID = os.environ.get('UUID', 'faacf142-dee8-48c2-8558-641123eb939c')       # UUID
-NEZHA_SERVER = os.environ.get('NEZHA_SERVER', 'nezha.mingfei1981.eu.org')   # 哪吒3个变量不全不运行
-NEZHA_PORT = os.environ.get('NEZHA_PORT', '443')                           # 哪吒端口为{443,8443,2096,2097,2083}其中之一时自动开启tls
-NEZHA_KEY = os.environ.get('NEZHA_KEY', 'l5GINS8lct8Egroitn')             # 哪吒客户端密钥
-ARGO_DOMAIN = os.environ.get('ARGO_DOMAIN', 'appwrite.ncaa.nyc.mn')        # 国定隧道域名，留空即启用临时隧道
-ARGO_AUTH = os.environ.get('ARGO_AUTH', 'eyJhIjoiOTk3ZjY4OGUzZjBmNjBhZGUwMWUxNGRmZTliOTdkMzEiLCJ0IjoiZDQzMTc4YTEtZGRmYy00YTkwLWI0YzAtNzNkODUwYzY3NDdmIiwicyI6IlptWm1NMlppT0RZdE1tRTFOeTAwTlRVd0xUbGhaV0V0WmpsaFl6VTFOV0k0TVRCbSJ9') # 国定隧道json或token，留空即启用临时隧道,json获取地址：https://fscarmen.cloudflare.now.cc
-ARGO_PORT = int(os.environ.get('ARGO_PORT', 8001))                         # Argo端口，固定隧道token请改回8080或在cf后台设置的端口与这里对应
-CFIP = os.environ.get('CFIP', 'www.visa.com.tw')                           # 优选域名或优选ip
-CFPORT = int(os.environ.get('CFPORT', 443))                                # 优选域名或优选ip对应端口
-NAME = os.environ.get('NAME', 'Vls')                                       # 节点名称
-PORT = int(os.environ.get('SERVER_PORT') or os.environ.get('PORT') or 3000) # 订阅端口，如无法订阅，请手动修改为分配的端口
+PROJECT_URL = os.environ.get('URL', '')
+INTERVAL_SECONDS = int(os.environ.get("TIME", 120))
+UUID = os.environ.get('UUID', 'faacf142-dee8-48c2-8558-641123eb939c')
+NEZHA_SERVER = os.environ.get('NEZHA_SERVER', 'nezha.mingfei1981.eu.org')
+NEZHA_PORT = os.environ.get('NEZHA_PORT', '443')
+NEZHA_KEY = os.environ.get('NEZHA_KEY', 'l5GINS8lct8Egroitn')
+ARGO_DOMAIN = os.environ.get('ARGO_DOMAIN', 'appwrite.ncaa.nyc.mn')
+ARGO_AUTH = os.environ.get('ARGO_AUTH', 'eyJhIjoiOTk3ZjY4OGUzZjBmNjBhZGUwMWUxNGRmZTliOTdkMzEiLCJ0IjoiZDQzMTc4YTEtZGRmYy00YTkwLWI0YzAtNzNkODUwYzY3NDdmIiwicyI6IlptWm1NMlppT0RZdE1tRTFOeTAwTlRVd0xUbGhaV0V0WmpsaFl6VTFOV0k0TVRCbSJ9')
+ARGO_PORT = int(os.environ.get('ARGO_PORT', 8001))
+CFIP = os.environ.get('CFIP', 'www.visa.com.tw')
+CFPORT = int(os.environ.get('CFPORT', 443))
+NAME = os.environ.get('NAME', 'Vls')
+PORT = int(os.environ.get('SERVER_PORT') or os.environ.get('PORT') or 3000)
 
-# Create directory if it doesn't exist
+# Create directory if it doesn't exist (保持不变)
 if not os.path.exists(FILE_PATH):
     os.makedirs(FILE_PATH)
     print(f"{FILE_PATH} has been created")
 else:
     print(f"{FILE_PATH} already exists")
 
-# Clean old files
+# Clean old files (保持不变)
 paths_to_delete = ['boot.log', 'list.txt', 'sub.txt', 'npm', 'web', 'bot', 'tunnel.yml', 'tunnel.json']
 for file in paths_to_delete:
     file_path = os.path.join(FILE_PATH, file)
@@ -46,7 +46,7 @@ for file in paths_to_delete:
     except Exception as e:
         print(f"Skip Delete {file_path}")
 
-# http server
+# HTTP server (保持不变)
 class MyHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
@@ -78,7 +78,7 @@ server_thread = threading.Thread(target=httpd.serve_forever)
 server_thread.daemon = True
 server_thread.start()
 
-# Generate xr-ay config file
+# Generate xr-ay config file (保持不变)
 def generate_config():
     config = {
         "log": {"access": "/dev/null", "error": "/dev/null", "loglevel": "none"},
@@ -97,7 +97,7 @@ def generate_config():
 
 generate_config()
 
-# Determine system architecture
+# Determine system architecture (保持不变)
 def get_system_architecture():
     arch = os.uname().machine
     if 'arm' in arch or 'aarch64' in arch or 'arm64' in arch:
@@ -105,13 +105,13 @@ def get_system_architecture():
     else:
         return 'amd'
 
-# Download file
+# Download file (保持不变)
 def download_file(file_name, file_url):
     file_path = os.path.join(FILE_PATH, file_name)
     with requests.get(file_url, stream=True) as response, open(file_path, 'wb') as file:
         shutil.copyfileobj(response.raw, file)
 
-# Download and run files
+# Download and run files (保持不变)
 def download_files_and_run():
     architecture = get_system_architecture()
     files_to_download = get_files_for_architecture(architecture)
@@ -127,11 +127,9 @@ def download_files_and_run():
         except Exception as e:
             print(f"Download {file_info['file_name']} failed: {e}")
 
-    # Authorize and run
     files_to_authorize = ['npm', 'web', 'bot']
     authorize_files(files_to_authorize)
 
-    # Run ne-zha
     NEZHA_TLS = ''
     valid_ports = ['443', '8443', '2096', '2087', '2083', '2053']
     if NEZHA_SERVER and NEZHA_PORT and NEZHA_KEY:
@@ -141,33 +139,30 @@ def download_files_and_run():
         try:
             subprocess.run(command, shell=True, check=True)
             print('npm is running')
-            subprocess.run('sleep 1', shell=True)  # Wait for 1 second
+            subprocess.run('sleep 1', shell=True)
         except subprocess.CalledProcessError as e:
             print(f'npm running error: {e}')
     else:
         print('NEZHA variable is empty, skip running')
 
-    # Run xr-ay
     command1 = f"nohup {FILE_PATH}/web -c {FILE_PATH}/config.json >/dev/null 2>&1 &"
     try:
         subprocess.run(command1, shell=True, check=True)
         print('web is running')
-        subprocess.run('sleep 1', shell=True)  # Wait for 1 second
+        subprocess.run('sleep 1', shell=True)
     except subprocess.CalledProcessError as e:
         print(f'web running error: {e}')
 
-    # Run cloud-fared
     if os.path.exists(os.path.join(FILE_PATH, 'bot')):
-        # Get command line arguments for cloud-fared
         args = get_cloud_flare_args()
         try:
             subprocess.run(f"nohup {FILE_PATH}/bot {args} >/dev/null 2>&1 &", shell=True, check=True)
             print('bot is running')
-            subprocess.run('sleep 2', shell=True)  # Wait for 2 seconds
+            subprocess.run('sleep 2', shell=True)
         except subprocess.CalledProcessError as e:
             print(f'Error executing command: {e}')
 
-    subprocess.run('sleep 3', shell=True)  # Wait for 3 seconds
+    subprocess.run('sleep 3', shell=True)
 
 def get_cloud_flare_args():
     processed_auth = ARGO_AUTH
@@ -188,7 +183,6 @@ def get_cloud_flare_args():
         args = f'tunnel --edge-ip-version auto --no-autoupdate --protocol http2 --logfile {FILE_PATH}/boot.log --loglevel info --url http://localhost:{ARGO_PORT}'
     return args
 
-# Return file information based on system architecture
 def get_files_for_architecture(architecture):
     if architecture == 'arm':
         return [
@@ -204,7 +198,6 @@ def get_files_for_architecture(architecture):
         ]
     return []
 
-# Authorize files
 def authorize_files(file_paths):
     new_permissions = 0o775
     for relative_file_path in file_paths:
@@ -215,7 +208,6 @@ def authorize_files(file_paths):
         except Exception as e:
             print(f"Empowerment failed for {absolute_file_path}: {e}")
 
-# Get fixed tunnel JSON and yml
 def argo_config():
     if not ARGO_AUTH or not ARGO_DOMAIN:
         print("ARGO_DOMAIN or ARGO_AUTH is empty, use quick Tunnels")
@@ -243,7 +235,6 @@ ingress:
 
 argo_config()
 
-# Get temporary tunnel domain
 def extract_domains():
     argo_domain = ''
     if ARGO_AUTH and ARGO_DOMAIN:
@@ -301,17 +292,27 @@ def extract_domains():
         except Exception as e:
             print(f"Error reading boot.log: {e}")
 
-# Generate list and sub info
+# 修改 generate_links 函数，增加重试机制和超时设置
 def generate_links(argo_domain):
-    # 使用 requests.get 替代 curl
-    try:
-        response = requests.get('https://speed.cloudflare.com/meta')
-        response.raise_for_status()  # 检查请求是否成功
-        meta_info = response.text.split('"')
-        ISP = f"{meta_info[25]}-{meta_info[17]}".replace(' ', '_').strip()
-    except requests.RequestException as e:
-        print(f"Error fetching meta info: {e}")
-        ISP = "Unknown-ISP"  # 如果请求失败，提供默认值
+    max_retries = 3
+    retry_delay = 5  # 秒
+    timeout = 30     # 请求超时时间，单位秒
+
+    for attempt in range(max_retries):
+        try:
+            response = requests.get('https://speed.cloudflare.com/meta', timeout=timeout)
+            response.raise_for_status()
+            meta_info = response.text.split('"')
+            ISP = f"{meta_info[25]}-{meta_info[17]}".replace(' ', '_').strip()
+            break  # 成功后跳出循环
+        except requests.RequestException as e:
+            print(f"Attempt {attempt + 1} failed to fetch meta info: {e}")
+            if attempt < max_retries - 1:
+                print(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                print("Max retries reached, using default ISP")
+                ISP = "Unknown-ISP"
 
     time.sleep(2)
     VMESS = {
@@ -343,9 +344,8 @@ trojan://{UUID}@{CFIP}:{CFPORT}?security=tls&sni={argo_domain}&type=ws&host={arg
         print(f"sub.txt not found")
     
     print(f'\n{FILE_PATH}/sub.txt saved successfully')
-    time.sleep(45)  # wait 45s 
+    time.sleep(45)
  
-    # cleanup files
     files_to_delete = ['npm', 'web', 'bot', 'boot.log', 'list.txt', 'config.json', 'tunnel.yml', 'tunnel.json']
     for file_to_delete in files_to_delete:
         file_path_to_delete = os.path.join(FILE_PATH, file_to_delete)
@@ -361,17 +361,20 @@ trojan://{UUID}@{CFIP}:{CFPORT}?security=tls&sni={argo_domain}&type=ws&host={arg
     print('App is running')
     print('Thank you for using this script, enjoy!')
 
-# Run the callback
 def start_server():
     download_files_and_run()
     extract_domains()
     
 start_server()
 
-# auto visit project page
+# 修改 visit_project_page 函数，增加重试机制和超时设置
 has_logged_empty_message = False
 
 def visit_project_page():
+    max_retries = 3
+    retry_delay = 5  # 秒
+    timeout = 30     # 请求超时时间，单位秒
+
     try:
         if not PROJECT_URL or not INTERVAL_SECONDS:
             global has_logged_empty_message
@@ -380,12 +383,22 @@ def visit_project_page():
                 has_logged_empty_message = True
             return
 
-        response = requests.get(PROJECT_URL)
-        response.raise_for_status()
-        print("Page visited successfully")
-        print('\033c', end='')
-    except requests.exceptions.RequestException as error:
-        print(f"Error visiting project page: {error}")
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(PROJECT_URL, timeout=timeout)
+                response.raise_for_status()
+                print("Page visited successfully")
+                print('\033c', end='')
+                break
+            except requests.RequestException as e:
+                print(f"Attempt {attempt + 1} failed to visit {PROJECT_URL}: {e}")
+                if attempt < max_retries - 1:
+                    print(f"Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                else:
+                    print("Max retries reached, skipping visit")
+    except Exception as error:
+        print(f"Unexpected error visiting project page: {error}")
 
 if __name__ == "__main__":
     while True:
