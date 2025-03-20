@@ -1,6 +1,7 @@
 const http = require('http');
 const https = require('https');
-const fs = require('fs').promises;
+const fsPromises = require('fs').promises; // 改名为 fsPromises
+const fs = require('fs'); // 引入原始 fs 模块用于 createWriteStream
 const { spawn } = require('child_process');
 const path = require('path');
 
@@ -22,13 +23,13 @@ const env = {
 
 async function initialize() {
     try {
-        await fs.mkdir(FILE_PATH, { recursive: true });
+        await fsPromises.mkdir(FILE_PATH, { recursive: true });
         await Promise.all([
-            fs.unlink(path.join(FILE_PATH, 'boot.log')).catch(() => {}),
-            fs.unlink(path.join(FILE_PATH, 'log.txt')).catch(() => {}),
-            fs.unlink(path.join(FILE_PATH, 'config.json')).catch(() => {}),
-            fs.unlink(path.join(FILE_PATH, 'tunnel.json')).catch(() => {}),
-            fs.unlink(path.join(FILE_PATH, 'tunnel.yml')).catch(() => {})
+            fsPromises.unlink(path.join(FILE_PATH, 'boot.log')).catch(() => {}),
+            fsPromises.unlink(path.join(FILE_PATH, 'log.txt')).catch(() => {}),
+            fsPromises.unlink(path.join(FILE_PATH, 'config.json')).catch(() => {}),
+            fsPromises.unlink(path.join(FILE_PATH, 'tunnel.json')).catch(() => {}),
+            fsPromises.unlink(path.join(FILE_PATH, 'tunnel.yml')).catch(() => {})
         ]);
 
         await configureArgo();
@@ -37,7 +38,7 @@ async function initialize() {
         await generateLinks();
     } catch (error) {
         console.error('初始化失败:', error);
-        throw error; // 抛出错误以便部署平台记录
+        throw error;
     }
 }
 
@@ -45,7 +46,7 @@ async function configureArgo() {
     if (!env.ARGO_AUTH || !env.ARGO_DOMAIN) return;
 
     if (env.ARGO_AUTH.includes('TunnelSecret')) {
-        await fs.writeFile(path.join(FILE_PATH, 'tunnel.json'), env.ARGO_AUTH);
+        await fsPromises.writeFile(path.join(FILE_PATH, 'tunnel.json'), env.ARGO_AUTH);
         const tunnelYml = `
 tunnel: ${env.ARGO_AUTH.split('"')[11]}
 credentials-file: ${path.join(FILE_PATH, 'tunnel.json')}
@@ -58,7 +59,7 @@ ingress:
       noTLSVerify: true
   - service: http_status:404
 `;
-        await fs.writeFile(path.join(FILE_PATH, 'tunnel.yml'), tunnelYml);
+        await fsPromises.writeFile(path.join(FILE_PATH, 'tunnel.yml'), tunnelYml);
     }
 }
 
@@ -79,7 +80,7 @@ async function generateConfig() {
         ],
         routing: { domainStrategy: "AsIs", rules: [{ type: "field", domain: ["domain:chat.openai.com", "domain:chatgpt.com", "domain:openai.com", "domain:ai.com"], outboundTag: "WARP" }] }
     };
-    await fs.writeFile(path.join(FILE_PATH, 'config.json'), JSON.stringify(config, null, 2));
+    await fsPromises.writeFile(path.join(FILE_PATH, 'config.json'), JSON.stringify(config, null, 2));
 }
 
 async function downloadAndRun() {
@@ -97,7 +98,7 @@ async function downloadAndRun() {
         const randomName = Math.random().toString(36).substring(2, 8);
         const filePath = path.join(FILE_PATH, randomName);
         await downloadFile(url, filePath);
-        await fs.chmod(filePath, '755');
+        await fsPromises.chmod(filePath, '755');
         fileMap[name] = filePath;
     }
 
@@ -119,7 +120,7 @@ async function downloadAndRun() {
     }
     spawn(fileMap.bot, args, { detached: true, stdio: 'ignore' }).unref();
 
-    await Promise.all(Object.values(fileMap).map(file => fs.unlink(file).catch(() => {})));
+    await Promise.all(Object.values(fileMap).map(file => fsPromises.unlink(file).catch(() => {})));
 }
 
 async function downloadFile(url, dest) {
@@ -136,7 +137,7 @@ async function downloadFile(url, dest) {
                 resolve();
             });
         }).on('error', (err) => {
-            fs.unlink(dest).catch(() => {}); // 删除未完成的文件
+            fs.unlink(dest, () => {}); // 删除未完成的文件
             reject(new Error(`下载失败: ${err.message} - ${url}`));
         });
     });
@@ -170,13 +171,13 @@ async function generateLinks() {
         `vmess://${Buffer.from(JSON.stringify({ v: "2", ps: `${env.NAME}-${isp}`, add: env.CFIP, port: env.CFPORT, id: env.UUID, aid: "0", scy: "none", net: "splithttp", type: "none", host: argodomain, path: "", tls: "tls", sni: argodomain, alpn: "" })).toString('base64')}`
     ];
 
-    await fs.writeFile(path.join(FILE_PATH, 'list.txt'), links.join('\n'));
+    await fsPromises.writeFile(path.join(FILE_PATH, 'list.txt'), links.join('\n'));
 }
 
 async function getArgoDomain() {
     for (let retry = 0; retry < 6; retry++) {
         try {
-            const content = await fs.readFile(path.join(FILE_PATH, 'boot.log'), 'utf8');
+            const content = await fsPromises.readFile(path.join(FILE_PATH, 'boot.log'), 'utf8');
             const match = content.match(/https:\/\/[a-z0-9+\.-]+\.trycloudflare\.com/);
             if (match) return match[0].replace('https://', '');
         } catch (e) {}
@@ -191,7 +192,7 @@ const server = http.createServer(async (req, res) => {
         res.end('Hello world!');
     } else if (req.url === '/sub') {
         try {
-            const data = await fs.readFile(path.join(FILE_PATH, 'list.txt'), 'utf8');
+            const data = await fsPromises.readFile(path.join(FILE_PATH, 'list.txt'), 'utf8');
             res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
             res.end(data);
         } catch (error) {
@@ -206,6 +207,6 @@ server.listen(PORT, () => {
     console.log(`服务器运行在端口 ${PORT}`);
     initialize().catch(err => {
         console.error('启动时发生错误:', err);
-        process.exit(1); // 退出进程以便部署平台捕获错误
+        process.exit(1);
     });
 });
