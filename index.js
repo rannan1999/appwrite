@@ -1,10 +1,11 @@
 const http = require('http');
+const https = require('https'); // Added for native HTTP requests
 const fs = require('fs').promises;
 const { exec, spawn } = require('child_process');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
-const FILE_PATH = process.env.FILE_PATH || path.resolve('./.npm'); // Use absolute path
+const FILE_PATH = process.env.FILE_PATH || path.resolve('./.npm');
 
 // 设置环境变量
 const env = {
@@ -124,8 +125,11 @@ async function downloadAndRun() {
 async function downloadFile(url, dest) {
     return new Promise((resolve, reject) => {
         exec(`curl -L -sS -o ${dest} ${url} || wget -q -O ${dest} ${url}`, (error) => {
-            if (error) reject(error);
-            else resolve();
+            if (error) {
+                reject(new Error(`Download failed: Neither curl nor wget is available. URL: ${url}`));
+            } else {
+                resolve();
+            }
         });
     });
 }
@@ -134,19 +138,21 @@ async function generateLinks() {
     const argodomain = env.ARGO_AUTH ? env.ARGO_DOMAIN : await getArgoDomain();
 
     const isp = await new Promise(resolve => {
-        exec('curl -s https://speed.cloudflare.com/meta', (err, stdout) => {
-            if (err || !stdout) {
-                console.error('Failed to fetch ISP metadata:', err);
-                resolve('unknown');
-                return;
-            }
-            try {
-                const data = JSON.parse(stdout);
-                resolve(`${data.city}-${data.country}`.replace(' ', '_'));
-            } catch (parseError) {
-                console.error('Failed to parse ISP metadata:', parseError);
-                resolve('unknown');
-            }
+        https.get('https://speed.cloudflare.com/meta', (res) => {
+            let data = '';
+            res.on('data', (chunk) => data += chunk);
+            res.on('end', () => {
+                try {
+                    const parsed = JSON.parse(data);
+                    resolve(`${parsed.city}-${parsed.country}`.replace(' ', '_'));
+                } catch (error) {
+                    console.error('Failed to parse ISP metadata:', error);
+                    resolve('unknown');
+                }
+            });
+        }).on('error', (err) => {
+            console.error('Failed to fetch ISP metadata:', err.message);
+            resolve('unknown');
         });
     });
 
