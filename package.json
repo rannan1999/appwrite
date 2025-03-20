@@ -1,0 +1,18 @@
+{
+  "name": "nodejs-glitch",
+  "version": "1.0.0",
+  "description": "glitch",
+  "main": "index.js",
+  "author": "admin",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "axios": "latest"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}
