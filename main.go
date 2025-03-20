@@ -1,21 +1,21 @@
-﻿package main
+package main
 
 import (
-    "bytes"
-    "encoding/base64"
-    "encoding/json"
-    "fmt"
-    "io"
-    "log"
-    "net/http"
-    "os"
-    "os/exec"
-    "path/filepath"
-    "regexp"
-    "runtime"
-    "strconv"
-    "strings"
-    "time"
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"runtime"
+	"strconv"
+	"strings"
+	"time"
 )
 
 // 环境变量配置
@@ -40,27 +40,25 @@ type Config struct {
 
 func loadConfig() *Config {
 	return &Config{
-		UploadURL:    getEnv("UPLOAD_URL", ""),  // 节点上传地址,需要先部署Merge-sub项目，例如：https://merge.serv00.net
-		ProjectURL:   getEnv("PROJECT_URL", ""), // 项目地址,需上传订阅或保活要填这个地址,例如：https://google.com
-		AutoAccess:   getEnvAsBool("AUTO_ACCESS", false), // 是否开启自动东保活,false关闭,true开启
-		FilePath:     getEnv("FILE_PATH", "./tmp"),       // 运行路径，sub.txt保存路径
-		SubPath:      getEnv("SUB_PATH", "sub"),          // 订阅路径,例如：https://google.com/sub
-		Port:         getEnv("SERVER_PORT", getEnv("PORT", "3000")), // http服务端口
-		UUID:         getEnv("UUID", "faacf142-dee8-48c2-8558-641123eb939c"), // 哪吒v1在不同的平台部署需要修改
-		NezhaServer:  getEnv("NEZHA_SERVER", "nezha.mingfei1981.eu.org"), // 哪吒v1填写形式：nz.abc.com:8008  哪吒v0填写形式：nz.abc.com
-		NezhaPort:    getEnv("NEZHA_PORT", "443"),   // 哪吒v1留空此项，v0的agent端口
-		NezhaKey:     getEnv("NEZHA_KEY", "l5GINS8lct8Egroitn"),    // 哪吒v1的NZ_CLIENT_SECRET或v0的agent密钥
-		ArgoDomain:   getEnv("ARGO_DOMAIN", "appwrite.ncaa.nyc.mn"),  // 固定隧道域名，留空即启用临时隧道
-		ArgoAuth:     getEnv("ARGO_AUTH", "eyJhIjoiOTk3ZjY4OGUzZjBmNjBhZGUwMWUxNGRmZTliOTdkMzEiLCJ0IjoiZDQzMTc4YTEtZGRmYy00YTkwLWI0YzAtNzNkODUwYzY3NDdmIiwicyI6IlptWm1NMlppT0RZdE1tRTFOeTAwTlRVd0xUbGhaV0V0WmpsaFl6VTFOV0k0TVRCbSJ9"),    // 固定隧道json或token，留空即启用临时隧道
-		ArgoPort:     getEnvAsInt("ARGO_PORT", 8001), // 固定隧道端口，使用token需要在cloudflare后台设置端口和这里一致
-		CFIP:         getEnv("CFIP", "www.visa.com.tw"), // 优选域名或优选ip
-		CFPort:       getEnvAsInt("CFPORT", 443),        // 优选域名或优选ip对应的端口
-		Name:         getEnv("NAME", "Vls"),             // 节点名称
+		UploadURL:    getEnv("UPLOAD_URL", ""),
+		ProjectURL:   getEnv("PROJECT_URL", ""),
+		AutoAccess:   getEnvAsBool("AUTO_ACCESS", false),
+		FilePath:     getEnv("FILE_PATH", "./tmp"),
+		SubPath:      getEnv("SUB_PATH", "sub"),
+		Port:         getEnv("SERVER_PORT", getEnv("PORT", "3000")),
+		UUID:         getEnv("UUID", "faacf142-dee8-48c2-8558-641123eb939c"),
+		NezhaServer:  getEnv("NEZHA_SERVER", "nezha.mingfei1981.eu.org"),
+		NezhaPort:    getEnv("NEZHA_PORT", "443"),
+		NezhaKey:     getEnv("NEZHA_KEY", "l5GINS8lct8Egroitn"),
+		ArgoDomain:   getEnv("ARGO_DOMAIN", "appwrite.ncaa.nyc.mn"),
+		ArgoAuth:     getEnv("ARGO_AUTH", "eyJhIjoiOTk3ZjY4OGUzZjBmNjBhZGUwMWUxNGRmZTliOTdkMzEiLCJ0IjoiZDQzMTc4YTEtZGRmYy00YTkwLWI0YzAtNzNkODUwYzY3NDdmIiwicyI6IlptWm1NMlppT0RZdE1tRTFOeTAwTlRVd0xUbGhaV0V0WmpsaFl6VTFOV0k0TVRCbSJ9"),
+		ArgoPort:     getEnvAsInt("ARGO_PORT", 8001),
+		CFIP:         getEnv("CFIP", "www.visa.com.tw"),
+		CFPort:       getEnvAsInt("CFPORT", 443),
+		Name:         getEnv("NAME", "Vls"),
 	}
 }
 
-
-// 创建运行目录
 func getEnvAsBool(key string, defaultValue bool) bool {
 	if value, exists := os.LookupEnv(key); exists {
 		return strings.ToLower(value) == "true"
@@ -68,7 +66,6 @@ func getEnvAsBool(key string, defaultValue bool) bool {
 	return defaultValue
 }
 
-// 删除历史节点
 func deleteNodes(cfg *Config) error {
 	if cfg.UploadURL == "" {
 		return nil
@@ -103,38 +100,36 @@ func deleteNodes(cfg *Config) error {
 	jsonData := map[string]interface{}{
 		"nodes": nodes,
 	}
-	
+
 	jsonBytes, _ := json.Marshal(jsonData)
-	resp, err := http.Post(cfg.UploadURL+"/api/delete-nodes", 
-		"application/json", 
+	resp, err := http.Post(cfg.UploadURL+"/api/delete-nodes",
+		"application/json",
 		bytes.NewBuffer(jsonBytes))
-	
+
 	if err != nil {
 		return nil
 	}
 	defer resp.Body.Close()
-	
+
 	return nil
 }
 
-// 上传节点或订阅
 func uploadNodes(cfg *Config) {
 	if cfg.UploadURL == "" && cfg.ProjectURL == "" {
 		return
 	}
 
 	if cfg.UploadURL != "" && cfg.ProjectURL != "" {
-		// 上传订阅
 		subscriptionUrl := fmt.Sprintf("%s/%s", cfg.ProjectURL, cfg.SubPath)
 		jsonData := map[string]interface{}{
 			"subscription": []string{subscriptionUrl},
 		}
-		
+
 		jsonBytes, _ := json.Marshal(jsonData)
-		resp, err := http.Post(cfg.UploadURL+"/api/add-subscriptions", 
-			"application/json", 
+		resp, err := http.Post(cfg.UploadURL+"/api/add-subscriptions",
+			"application/json",
 			bytes.NewBuffer(jsonBytes))
-		
+
 		if err == nil && resp.StatusCode == 200 {
 			log.Println("Subscription uploaded successfully")
 		}
@@ -142,24 +137,23 @@ func uploadNodes(cfg *Config) {
 			resp.Body.Close()
 		}
 	} else if cfg.UploadURL != "" {
-		// 上传节点
 		subPath := filepath.Join(cfg.FilePath, "sub.txt")
 		if _, err := os.Stat(subPath); os.IsNotExist(err) {
 			return
 		}
-	
+
 		content, err := os.ReadFile(subPath)
 		if err != nil {
 			return
 		}
-				
+
 		decoded, err := base64.StdEncoding.DecodeString(string(content))
 		if err != nil {
 			return
 		}
-	
+
 		nodes := []string{}
-		for _, line := range strings.Split(string(decoded), "\n") {  // Changed from content to decoded
+		for _, line := range strings.Split(string(decoded), "\n") {
 			if matched, _ := regexp.MatchString(`(vless|vmess|trojan|hysteria2|tuic)://`, line); matched {
 				nodes = append(nodes, strings.TrimSpace(line))
 			}
@@ -172,12 +166,12 @@ func uploadNodes(cfg *Config) {
 		jsonData := map[string]interface{}{
 			"nodes": nodes,
 		}
-		
+
 		jsonBytes, _ := json.Marshal(jsonData)
-		resp, err := http.Post(cfg.UploadURL+"/api/add-nodes", 
-			"application/json", 
+		resp, err := http.Post(cfg.UploadURL+"/api/add-nodes",
+			"application/json",
 			bytes.NewBuffer(jsonBytes))
-		
+
 		if err == nil && resp.StatusCode == 200 {
 			log.Println("Nodes uploaded successfully")
 		}
@@ -187,7 +181,6 @@ func uploadNodes(cfg *Config) {
 	}
 }
 
-// 添加自动访问任务
 func addVisitTask(cfg *Config) {
 	if !cfg.AutoAccess || cfg.ProjectURL == "" {
 		log.Println("Skipping adding automatic access task")
@@ -197,12 +190,12 @@ func addVisitTask(cfg *Config) {
 	jsonData := map[string]string{
 		"url": cfg.ProjectURL,
 	}
-	
+
 	jsonBytes, _ := json.Marshal(jsonData)
-	resp, err := http.Post("https://gifted-steel-cheek.glitch.me/add-url", 
-		"application/json", 
+	resp, err := http.Post("https://gifted-steel-cheek.glitch.me/add-url",
+		"application/json",
 		bytes.NewBuffer(jsonBytes))
-	
+
 	if err != nil {
 		log.Printf("添加URL失败: %v", err)
 		return
@@ -212,9 +205,8 @@ func addVisitTask(cfg *Config) {
 	log.Println("automatic access task added successfully")
 }
 
-// XRay配置结构
 type XRayConfig struct {
-	Log       LogConfig       `json:"log"`
+	Log       LogConfig      `json:"log"`
 	Inbounds  []Inbound      `json:"inbounds"`
 	DNS       DNSConfig      `json:"dns"`
 	Outbounds []Outbound     `json:"outbounds"`
@@ -243,7 +235,7 @@ type DNSConfig struct {
 type Outbound struct {
 	Protocol string                 `json:"protocol"`
 	Settings map[string]interface{} `json:"settings,omitempty"`
-	Tag      string                `json:"tag,omitempty"`
+	Tag      string                 `json:"tag,omitempty"`
 }
 
 type RoutingConfig struct {
@@ -271,7 +263,7 @@ func cleanupOldFiles(filePath string) {
 	pathsToDelete := []string{"web", "bot", "npm", "sub.txt", "boot.log"}
 	for _, file := range pathsToDelete {
 		fullPath := filepath.Join(filePath, file)
-		os.Remove(fullPath)  
+		os.Remove(fullPath)
 	}
 }
 
@@ -400,7 +392,6 @@ func generateXRayConfig(cfg *Config) {
 		},
 	}
 
-	// 添加其他inbounds
 	additionalInbounds := []Inbound{
 		{
 			Port:     3001,
@@ -498,11 +489,9 @@ func generateXRayConfig(cfg *Config) {
 }
 
 func startServer(cfg *Config) {
-	// 下载并运行依赖文件
 	arch := getSystemArchitecture()
 	files := getFilesForArchitecture(arch)
 
-	// 下载所有文件
 	for _, file := range files {
 		filePath := filepath.Join(cfg.FilePath, file.fileName)
 		if err := downloadFile(filePath, file.fileUrl); err != nil {
@@ -516,10 +505,8 @@ func startServer(cfg *Config) {
 		}
 	}
 
-	// 运行nezha
 	if cfg.NezhaServer != "" && cfg.NezhaKey != "" {
 		if cfg.NezhaPort == "" {
-			// 生成 config.yaml
 			configYaml := fmt.Sprintf(`
 client_secret: %s
 debug: false
@@ -553,8 +540,6 @@ uuid: %s`, cfg.NezhaKey, cfg.NezhaServer, cfg.UUID)
 			}
 		} else {
 			nezhaArgs := []string{"-s", fmt.Sprintf("%s:%s", cfg.NezhaServer, cfg.NezhaPort), "-p", cfg.NezhaKey}
-			
-			// 检查是否需要TLS
 			tlsPorts := []string{"443", "8443", "2096", "2087", "2083", "2053"}
 			for _, port := range tlsPorts {
 				if cfg.NezhaPort == port {
@@ -574,7 +559,6 @@ uuid: %s`, cfg.NezhaKey, cfg.NezhaServer, cfg.UUID)
 		log.Println("NEZHA variable is empty, skipping running")
 	}
 
-	// 运行xray
 	cmd := exec.Command(filepath.Join(cfg.FilePath, "web"), "-c", filepath.Join(cfg.FilePath, "config.json"))
 	devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
 	if err == nil {
@@ -588,7 +572,6 @@ uuid: %s`, cfg.NezhaKey, cfg.NezhaServer, cfg.UUID)
 		log.Println("web is running")
 	}
 
-	// 运行cloudflared
 	if _, err := os.Stat(filepath.Join(cfg.FilePath, "bot")); err == nil {
 		var args []string
 
@@ -597,13 +580,12 @@ uuid: %s`, cfg.NezhaKey, cfg.NezhaServer, cfg.UUID)
 		} else if strings.Contains(cfg.ArgoAuth, "TunnelSecret") {
 			args = []string{"tunnel", "--edge-ip-version", "auto", "--config", filepath.Join(cfg.FilePath, "tunnel.yml"), "run"}
 		} else {
-			args = []string{"tunnel", "--edge-ip-version", "auto", "--no-autoupdate", "--protocol", "http2", 
+			args = []string{"tunnel", "--edge-ip-version", "auto", "--no-autoupdate", "--protocol", "http2",
 				"--logfile", filepath.Join(cfg.FilePath, "boot.log"), "--loglevel", "info",
 				"--url", fmt.Sprintf("http://localhost:%d", cfg.ArgoPort)}
 		}
 
 		cmd := exec.Command(filepath.Join(cfg.FilePath, "bot"), args...)
-		// 重定向输出到boot.log
 		logFile, err := os.Create(filepath.Join(cfg.FilePath, "boot.log"))
 		if err == nil {
 			cmd.Stdout = logFile
@@ -662,16 +644,14 @@ ingress:
 	}
 }
 
-// 提取Argo域名
 func extractDomains(cfg *Config) (string, error) {
 	if cfg.ArgoAuth != "" && cfg.ArgoDomain != "" {
 		log.Printf("ARGO_DOMAIN: %s", cfg.ArgoDomain)
 		return cfg.ArgoDomain, nil
 	}
 
-	// 等待boot.log生成并读取域名
 	bootLogPath := filepath.Join(cfg.FilePath, "boot.log")
-	for i := 0; i < 30; i++ { // 最多等待30秒
+	for i := 0; i < 30; i++ {
 		content, err := os.ReadFile(bootLogPath)
 		if err == nil {
 			re := regexp.MustCompile(`https?://([^/]*trycloudflare\.com)/?`)
@@ -688,12 +668,19 @@ func extractDomains(cfg *Config) (string, error) {
 	return "", fmt.Errorf("Failed to get ArgoDomain after 30 seconds")
 }
 
-// 生成订阅链接
 func generateLinks(cfg *Config, argoDomain string) error {
-	cmd := exec.Command("curl", "-s", "https://speed.cloudflare.com/meta")
-	output, err := cmd.Output()
+	// 使用 http.Client 替代 curl
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get("https://speed.cloudflare.com/meta")
 	if err != nil {
 		return fmt.Errorf("Failed to get ISP info: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// 读取响应内容
+	output, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("Failed to read ISP info: %v", err)
 	}
 
 	var meta map[string]interface{}
@@ -704,7 +691,7 @@ func generateLinks(cfg *Config, argoDomain string) error {
 	isp := fmt.Sprintf("%s-%s", meta["country"], meta["asOrganization"])
 	isp = strings.ReplaceAll(isp, " ", "_")
 
-	// 生成VMESS配置
+	// 生成 VMESS 配置
 	vmess := map[string]interface{}{
 		"v":    "2",
 		"ps":   fmt.Sprintf("%s-%s", cfg.Name, isp),
@@ -748,8 +735,8 @@ trojan://%s@%s:%d?security=tls&sni=%s&type=ws&host=%s&path=%%2Ftrojan-argo%%3Fed
 	}
 	fmt.Printf("\n%s\n\n", encodedContent)
 	log.Printf("%s/sub.txt saved successfully\n", cfg.FilePath)
-	uploadNodes(cfg)  // 上传节点或订阅
-	// 添加/sub路由
+	uploadNodes(cfg)
+
 	http.HandleFunc("/sub", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		fmt.Fprint(w, encodedContent)
@@ -758,7 +745,6 @@ trojan://%s@%s:%d?security=tls&sni=%s&type=ws&host=%s&path=%%2Ftrojan-argo%%3Fed
 	return nil
 }
 
-// 清理临时文件
 func cleanupTempFiles(cfg *Config) {
 	time.Sleep(15 * time.Second)
 	filesToDelete := []string{
@@ -772,20 +758,17 @@ func cleanupTempFiles(cfg *Config) {
 	}
 
 	for _, file := range filesToDelete {
-		os.Remove(file) 
+		os.Remove(file)
 	}
-	fmt.Print("\033[H\033[2J") // Clear screen
+	fmt.Print("\033[H\033[2J")
 	log.Println("App is running")
 	log.Println("Thank you for using this script, enjoy!")
 }
 
-
-// 启动所有服务
 func startServices(cfg *Config) error {
 	generateArgoConfig(cfg)
 	startServer(cfg)
 
-	// 提取域名并生成链接
 	argoDomain, err := extractDomains(cfg)
 	if err != nil {
 		return fmt.Errorf("Failed to extract domain: %v", err)
@@ -795,7 +778,6 @@ func startServices(cfg *Config) error {
 		return fmt.Errorf("Failed to generate links: %v", err)
 	}
 
-	// 清理临时文件
 	go cleanupTempFiles(cfg)
 
 	return nil
@@ -803,32 +785,24 @@ func startServices(cfg *Config) error {
 
 func main() {
 	cfg := loadConfig()
-	
-	// 创建运行文件夹
+
 	if err := os.MkdirAll(cfg.FilePath, 0775); err != nil {
 		log.Printf("Failed to create directory: %v", err)
 	}
 
-	// 删除历史节点
 	deleteNodes(cfg)
-
-	// 清理历史文件
 	cleanupOldFiles(cfg.FilePath)
 
-	// 创建HTTP服务器
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Hello world!")
 	})
 
-	// 生成配置文件
 	generateXRayConfig(cfg)
 
-	// 启动核心服务
 	if err := startServices(cfg); err != nil {
 		log.Printf("Failed to start services: %v", err)
 	}
 
-	// 添加自动访问任务
 	addVisitTask(cfg)
 
 	log.Printf("http server is running on port: %s\n", cfg.Port)
