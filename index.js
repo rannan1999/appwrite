@@ -4,7 +4,7 @@ const { exec, spawn } = require('child_process');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
-const FILE_PATH = process.env.FILE_PATH || './.npm';
+const FILE_PATH = process.env.FILE_PATH || path.resolve('./.npm'); // Use absolute path
 
 // 设置环境变量
 const env = {
@@ -22,7 +22,6 @@ const env = {
 
 async function initialize() {
     try {
-        // 创建目录并清理旧文件
         await fs.mkdir(FILE_PATH, { recursive: true });
         await Promise.all([
             fs.unlink(path.join(FILE_PATH, 'boot.log')).catch(() => {}),
@@ -101,28 +100,24 @@ async function downloadAndRun() {
         fileMap[name] = filePath;
     }
 
-    // 运行 npm
     if (env.NEZHA_SERVER && env.NEZHA_PORT && env.NEZHA_KEY) {
         const tlsPorts = ["443", "8443", "2096", "2087", "2083", "2053"];
         const nezhaTLS = tlsPorts.includes(env.NEZHA_PORT) ? '--tls' : '';
         spawn(fileMap.npm, ['-s', `${env.NEZHA_SERVER}:${env.NEZHA_PORT}`, '-p', env.NEZHA_KEY, nezhaTLS], { detached: true, stdio: 'ignore' }).unref();
     }
 
-    // 运行 web
     spawn(fileMap.web, ['-c', path.join(FILE_PATH, 'config.json')], { detached: true, stdio: 'ignore' }).unref();
 
-    // 运行 bot
     let args;
     if (/^[A-Z0-9a-z=]{120,250}$/.test(env.ARGO_AUTH)) {
         args = ['tunnel', '--edge-ip-version', 'auto', '--no-autoupdate', '--protocol', 'http2', 'run', '--token', env.ARGO_AUTH];
     } else if (env.ARGO_AUTH.includes('TunnelSecret')) {
-        args = ['tunnel', '--region', 'us', '--edge-ip-version', 'auto', '--config', 'tunnel.yml', 'run'];
+        args = ['tunnel', '--region', 'us', '--edge-ip-version', 'auto', '--config', path.join(FILE_PATH, 'tunnel.yml'), 'run'];
     } else {
         args = ['tunnel', '--region', 'us', '--edge-ip-version', 'auto', '--no-autoupdate', '--protocol', 'http2', '--logfile', path.join(FILE_PATH, 'boot.log'), '--loglevel', 'info', '--url', `http://localhost:${env.ARGO_PORT}`];
     }
     spawn(fileMap.bot, args, { detached: true, stdio: 'ignore' }).unref();
 
-    // 清理文件
     await Promise.all(Object.values(fileMap).map(file => fs.unlink(file).catch(() => {})));
 }
 
@@ -140,9 +135,18 @@ async function generateLinks() {
 
     const isp = await new Promise(resolve => {
         exec('curl -s https://speed.cloudflare.com/meta', (err, stdout) => {
-            if (err) resolve('unknown');
-            const data = JSON.parse(stdout);
-            resolve(`${data.city}-${data.country}`.replace(' ', '_'));
+            if (err || !stdout) {
+                console.error('Failed to fetch ISP metadata:', err);
+                resolve('unknown');
+                return;
+            }
+            try {
+                const data = JSON.parse(stdout);
+                resolve(`${data.city}-${data.country}`.replace(' ', '_'));
+            } catch (parseError) {
+                console.error('Failed to parse ISP metadata:', parseError);
+                resolve('unknown');
+            }
         });
     });
 
@@ -167,7 +171,6 @@ async function getArgoDomain() {
     return '';
 }
 
-// 创建 HTTP 服务器
 const server = http.createServer(async (req, res) => {
     if (req.url === '/') {
         res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
