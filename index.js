@@ -1,7 +1,7 @@
 const http = require('http');
 const https = require('https');
-const fsPromises = require('fs').promises; // 改名为 fsPromises
-const fs = require('fs'); // 引入原始 fs 模块用于 createWriteStream
+const fsPromises = require('fs').promises;
+const fs = require('fs');
 const { spawn } = require('child_process');
 const path = require('path');
 
@@ -126,20 +126,33 @@ async function downloadAndRun() {
 async function downloadFile(url, dest) {
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(dest);
-        https.get(url, (response) => {
-            if (response.statusCode !== 200) {
-                reject(new Error(`下载失败: HTTP ${response.statusCode} - ${url}`));
-                return;
-            }
-            response.pipe(file);
-            file.on('finish', () => {
-                file.close();
-                resolve();
+        function request(url) {
+            https.get(url, (response) => {
+                if (response.statusCode === 301 || response.statusCode === 302) {
+                    const redirectUrl = response.headers.location;
+                    if (!redirectUrl) {
+                        reject(new Error(`重定向失败: 无 Location 头 - ${url}`));
+                        return;
+                    }
+                    console.log(`重定向到: ${redirectUrl}`);
+                    request(redirectUrl); // 递归处理重定向
+                    return;
+                }
+                if (response.statusCode !== 200) {
+                    reject(new Error(`下载失败: HTTP ${response.statusCode} - ${url}`));
+                    return;
+                }
+                response.pipe(file);
+                file.on('finish', () => {
+                    file.close();
+                    resolve();
+                });
+            }).on('error', (err) => {
+                fs.unlink(dest, () => {});
+                reject(new Error(`下载失败: ${err.message} - ${url}`));
             });
-        }).on('error', (err) => {
-            fs.unlink(dest, () => {}); // 删除未完成的文件
-            reject(new Error(`下载失败: ${err.message} - ${url}`));
-        });
+        }
+        request(url); // 初始请求
     });
 }
 
