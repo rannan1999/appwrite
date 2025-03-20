@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
-	"net/http"  // 添加 http 包
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"io"  // 添加 io 包
 )
 
 type Config struct {
@@ -96,7 +96,7 @@ func startNezha(cfg *Config) {
 			"-s", fmt.Sprintf("%s:%s", cfg.NezhaServer, cfg.NezhaPort),
 			"-p", cfg.NezhaKey,
 		}
-		
+
 		// 检查是否需要 TLS
 		tlsPorts := []string{"443", "8443", "2096", "2087", "2083", "2053"}
 		for _, port := range tlsPorts {
@@ -121,7 +121,7 @@ func startNezha(cfg *Config) {
 func main() {
 	cfg := loadConfig()
 	startNezha(cfg)
-	
+
 	// 保持程序运行
 	select {}
 }
